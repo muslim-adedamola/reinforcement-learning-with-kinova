@@ -80,6 +80,8 @@ There is a *done* condition to check if the episode is done. The episode is comp
 8. [https://stable-baselines.readthedocs.io/en/master/guide/custom\_env.html](https://stable-baselines.readthedocs.io/en/master/guide/custom_env.html)  
 9. [https://roboticseabass.com/2020/08/15/introduction-to-deep-reinforcement-learning/](https://roboticseabass.com/2020/08/15/introduction-to-deep-reinforcement-learning/)  
 10. https://roboticseabass.com/2020/08/02/an-intuitive-guide-to-reinforcement-learning/
+11. [https://github.com/denisgriaznov/CustomMuJoCoEnviromentForRL](https://github.com/denisgriaznov/CustomMuJoCoEnviromentForRL)
+12. [Mujoco Menagerie](https://github.com/google-deepmind/mujoco_menagerie)
 
 ***If you have any questions, contact me***
 
