@@ -1,0 +1,56 @@
+<mujoco model="gen3 scene">
+  <include file="gen3.xml"/>
+
+  <statistic center="0.3 0 0.45" extent="0.8" meansize="0.05"/>
+
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.1 0.1 0.1" specular="0 0 0"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <global azimuth="120" elevation="-20"/>
+  </visual>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3"
+      markrgb="0.8 0.8 0.8" width="300" height="300"/>
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
+    
+    <!-- Table Texture and Material -->
+    <texture type="2d" name="table_texture" builtin="checker" mark="edge" rgb1="0.5 0.5 0.5" rgb2="0.4 0.4 0.4" width="300" height="300"/>
+    <material name="table_material" texture="table_texture" texuniform="true" texrepeat="1 1" reflectance="0.5"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0 0 1.5" directional="true"/>
+    <geom name="floor" size="0 0 0.05" type="plane" material="groundplane"/>
+
+    <!-- Table Definition -->
+    <body name="table" pos="0 0 0.6">
+      <geom name="table_top" type="box" size="0.7 0.7 0.1" material="table_material"/>
+      <body name="table_leg1" pos="-0.6 -0.6 -0.3">
+        <geom type="box" size="0.07 0.07 0.3" material="table_material"/>
+      </body>
+      <body name="table_leg2" pos="0.6 -0.6 -0.3">
+        <geom type="box" size="0.07 0.07 0.3" material="table_material"/>
+      </body>
+      <body name="table_leg3" pos="-0.6 0.6 -0.3">
+        <geom type="box" size="0.07 0.07 0.3" material="table_material"/>
+      </body>
+      <body name="table_leg4" pos="0.6 0.6 -0.3">
+        <geom type="box" size="0.07 0.07 0.3" material="table_material"/>
+      </body>
+    </body>
+
+    <!--Target Definition-->
+    <body name="target" pos="0 0 0.9">
+			<joint armature="0" axis="1 0 0" damping="0.5" name="target_x" pos="0 0 0" range="-.27 .27" ref=".1" stiffness="0" type="slide"/>
+			<joint armature="0" axis="0 1 0" damping="0.5" name="target_y" pos="0 0 0" range="-.27 .27" ref="-.1" stiffness="0" type="slide"/>
+			<geom conaffinity="0" contype="0" name="target" pos="0 0 0" rgba="0.2 0.8 0.2 1" size=".025" type="sphere"/>
+		</body>
+
+    <!--Placeholder for Sphere-->
+    <body name="sphere" pos="0 0 0">
+      <geom type="sphere" size="0.05" rgba="1 0 0 1"/>
+    </body>
+  </worldbody>
+</mujoco>
