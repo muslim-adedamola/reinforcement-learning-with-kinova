@@ -1,7 +1,11 @@
 # reinforcement-learning-with-kinova
+## An intro for newbies.
+![Demo](assets/a.gif)
+
+
 **Documentation**
 
-**If you are new to RL, and want to catch up very quickly with the theory, maths, terms, and the concept, I recommend reading reference 10 first.**
+**To catch up very quickly with the theory, maths, terms, and the concept, I recommend reading reference 10 first.**
 
 **To start from scratch,** 
 
