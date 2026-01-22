@@ -15,9 +15,10 @@ The task is intentionally minimal and obstacle-free to serve as an introduction 
 
 ---
 
-## Level 2: Obstacle & Collision Avoidance (Simulation)
 
-A second stage of this extends the basic joint-space reaching task by introducing:
+#### Level 2: Obstacle & Collision Avoidance 
+
+A second stage of this project extends the basic joint-space reaching task by introducing:
 - obstacle-aware observations
 - collision detection (obstacles + table)
 - safety-driven reward shaping
