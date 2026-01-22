@@ -15,6 +15,18 @@ The task is intentionally minimal and obstacle-free to serve as an introduction 
 
 ---
 
+## Level 2: Obstacle & Collision Avoidance (Simulation)
+
+A second stage of this extends the basic joint-space reaching task by introducing:
+- obstacle-aware observations
+- collision detection (obstacles + table)
+- safety-driven reward shaping
+
+👉 View on the branch:
+https://github.com/muslim-adedamola/reinforcement-learning-with-kinova/tree/obstacle-and-collision-avoidance
+
+---
+
 ## Task Description
 - **Robot:** Kinova Gen3 (7-DOF)
 - **Objective:** Reach randomly sampled joint-space goal configurations
