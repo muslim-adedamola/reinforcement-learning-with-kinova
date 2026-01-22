@@ -1,4 +1,4 @@
-# Obstacle-Aware Reinforcement Learning with Kinova Gen3 (Level 2)
+# Obstacle-Aware Reinforcement Learning with Kinova Gen3
 
 ![Demo](assets/v2.gif)
 
@@ -73,8 +73,6 @@ Key behaviors:
 - Positive reward when goal is reached
 - Continuous shaping from joint-space error and Cartesian distance-to-goal
 - Additional penalty when the robot moves closer to obstacles (negative delta distances)
-
-For details, see `docs/explanation.md`.
 
 ---
 
