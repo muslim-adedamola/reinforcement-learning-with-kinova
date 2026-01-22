@@ -25,7 +25,7 @@
     <geom name="floor" size="0 0 0.05" type="plane" material="groundplane"/>
 
     <!-- Table Definition -->
-    <body name="table" pos="0 0 0.6">
+    <body name="table" pos="0 0 0.5">
       <geom name="table_top" type="box" size="0.7 0.7 0.1" material="table_material"/>
       <body name="table_leg1" pos="-0.6 -0.6 -0.3">
         <geom type="box" size="0.07 0.07 0.3" material="table_material"/>
@@ -41,16 +41,161 @@
       </body>
     </body>
 
-    <!--Target Definition-->
+    <!-- Target Definition -->
     <body name="target" pos="0 0 0.9">
-			<joint armature="0" axis="1 0 0" damping="0.5" name="target_x" pos="0 0 0" range="-.27 .27" ref=".1" stiffness="0" type="slide"/>
-			<joint armature="0" axis="0 1 0" damping="0.5" name="target_y" pos="0 0 0" range="-.27 .27" ref="-.1" stiffness="0" type="slide"/>
-			<geom conaffinity="0" contype="0" name="target" pos="0 0 0" rgba="0.2 0.8 0.2 1" size=".025" type="sphere"/>
-		</body>
-
-    <!--Placeholder for Sphere-->
-    <body name="sphere" pos="0 0 0">
-      <geom type="sphere" size="0.05" rgba="1 0 0 1"/>
+      <joint armature="0" axis="1 0 0" damping="0.5" name="target_x" pos="0 0 0" range="-.27 .27" ref=".1" stiffness="0" type="slide"/>
+      <joint armature="0" axis="0 1 0" damping="0.5" name="target_y" pos="0 0 0" range="-.27 .27" ref="-.1" stiffness="0" type="slide"/>
+      <geom conaffinity="0" contype="0" name="target" pos="0 0 0" rgba="0.2 0.8 0.2 1" size=".025" type="sphere"/>
     </body>
+
+    <!-- Placeholder for Obstacle Sphere -->
+    <body name="sphere1" pos="0 0 0"> <geom type="sphere" size="0.05" rgba="1 0 0 1"/> </body>
+    <body name="sphere2" pos="0 0 0"> <geom type="sphere" size="0.05" rgba="1 0 0 1"/> </body>
+    <body name="sphere3" pos="0 0 0"> <geom type="sphere" size="0.05" rgba="1 0 0 1"/> </body>
+    <body name="sphere4" pos="0 0 0"> <geom type="sphere" size="0.05" rgba="1 0 0 1"/> </body>
+
+
+
+    <!-- UNCOMMENT THE LINK SPHERES FOR VISUALIZATION -->
+
+
+    <!-- Link Spheres -->
+    <body name="link_sphere1" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+    <body name="link_sphere2" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+    <body name="link_sphere3" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+    <body name="link_sphere4" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+    <body name="link_sphere5" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+    <body name="link_sphere6" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+    <body name="link_sphere7" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+
+
+    <body name="link_sphere8" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+    <!-- <body name="link_sphere9" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+    <body name="link_sphere10" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+    <body name="link_sphere11" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+        <body name="link_sphere12" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+        <body name="link_sphere13" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+        <body name="link_sphere14" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body> -->
+        <!-- <body name="link_sphere15" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+    <body name="link_sphere16" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+        <body name="link_sphere17" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+        <body name="link_sphere18" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+        <body name="link_sphere19" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+        <body name="link_sphere20" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+        <body name="link_sphere21" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+        <body name="link_sphere22" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+        <body name="link_sphere23" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+        <body name="link_sphere24" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+        <body name="link_sphere25" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+        <body name="link_sphere26" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+        <body name="link_sphere27" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+        <body name="link_sphere28" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+        <body name="link_sphere29" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+        <body name="link_sphere30" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+        <body name="link_sphere31" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+        <body name="link_sphere32" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+        <body name="link_sphere33" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+        <body name="link_sphere34" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+        <body name="link_sphere35" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+        <body name="link_sphere36" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+        <body name="link_sphere37" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+        <body name="link_sphere38" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+        <body name="link_sphere39" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+        <body name="link_sphere40" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+    <body name="link_sphere41" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+    <body name="link_sphere42" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+    <body name="link_sphere43" pos="0 0 0">
+      <geom type="sphere" size="0.06" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body> -->
+
   </worldbody>
 </mujoco>
+
+
+<!-- contype="0" and conaffinity="0": used to disable collisions for the link_sphere geometries. 
+Setting contype="0" ensures that the body will not generate any contact/contact forces with other bodies. 
+conaffinity="0" specifies that this body will not interact with any other body's contact affinity. -->

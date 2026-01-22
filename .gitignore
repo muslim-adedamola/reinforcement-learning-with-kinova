@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.pyc
+
+# MuJoCo
+MUJOCO_LOG.TXT
+*.pdf
+*.txt
+
+# Training artifacts
+vec_normalize_stats.pkl
+ppo_kinova_obs_env_tensorboard/
+

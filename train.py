@@ -5,13 +5,13 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import VecNormalize 
 
-n_envs = 100
-n_episodes = 200
+n_envs = 250
+n_episodes = 400
 episode_len = 2500 
 render_mode = "rgb_array"
-save_freq = 10000000
-save_path = "./models"  
-model_save_name = "kinova_obs_trainPPO200MObstacle"
+save_freq = 50000000 // n_envs
+save_path = "/home/arms/muslim_kinova_rl/models"  
+model_save_name = "kinova_obs_1"
 
 def make_env():
     return KinovaObsEnv(episode_len=episode_len, render_mode=render_mode)
@@ -29,7 +29,7 @@ if os.path.exists(f"{save_path}/{model_save_name}.zip"):
 
     start_time = time.time()
     
-    additional_timesteps = 100000  # Adjust as needed
+    additional_timesteps = 50000000  # Adjust as needed
     model.learn(total_timesteps=additional_timesteps, log_interval=4, callback=save_callback, progress_bar=True)
 
 else:
@@ -37,7 +37,7 @@ else:
 
     start_time = time.time()
 
-    total_timesteps = n_episodes * episode_len * n_envs
+    total_timesteps = 300_000_000 
     model.learn(total_timesteps=total_timesteps, log_interval=4, callback=save_callback, progress_bar=True)
 
 # After loading or training, continue with post-training tasks
@@ -55,6 +55,3 @@ model.save(f"{save_path}/{model_save_name}")
 # Save the vector normalization statistics
 if isinstance(env, VecNormalize):
     env.save("vec_normalize_stats.pkl")
-
-
-

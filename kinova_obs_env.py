@@ -2,7 +2,7 @@ import numpy as np
 from gymnasium import utils
 from gymnasium.envs.mujoco import MujocoEnv
 from gymnasium.spaces import Box
-from kinova_fk import ForwardKinematics
+import c_func
 from stable_baselines3.common.callbacks import BaseCallback
 import os
 import mujoco
@@ -11,19 +11,18 @@ import mujoco
 class KinovaObsEnv(MujocoEnv, utils.EzPickle):
 
     metadata = {
-        "render_modes" : [
+        "render_modes": [
             "human",
             "rgb_array",
             "depth_array",
         ],
-        "render_fps" : 100
+        "render_fps": 100
     }
-
 
     def __init__(self, episode_len=2000, reset_noise_scale=1e-2, **kwargs):
         utils.EzPickle.__init__(self, reset_noise_scale, **kwargs)
 
-        observation_space = Box(low=-np.inf, high=np.inf, shape=(21,), dtype=np.float64)
+        observation_space = Box(low=-np.inf, high=np.inf, shape=(76,), dtype=np.float64)
         self._reset_noise_scale = reset_noise_scale
 
         MujocoEnv.__init__(
@@ -32,24 +31,30 @@ class KinovaObsEnv(MujocoEnv, utils.EzPickle):
             5,
             observation_space=observation_space,
             **kwargs
-            )
-        
+        )
+
         self.episode_len = episode_len
         self.step_number = 0
         self.goal_reached_count = 0
         self.goal_angles = np.zeros(7)
-        self.fk = ForwardKinematics()
+        self.obstacle_collision = False
+        self.table_collision = False
+        self.min_distance_to_obstacle_spheres = ([0.5, 0.5, 0.5, 0.5])
+        self.collision_flags = np.zeros(4, dtype=bool) 
+        self.previous_link_distances = np.zeros((4, 8))
+        self.current_link_distances = np.zeros((4, 8))  # 4 obstacles, 8 links
+        self.delta_link_distances = np.zeros((4, 8)) 
+        #self.link_sphere_positions = np.zeros((8, 3))  #positions of the 7 link spheres
 
-        #workspace limit of robot
+        # Workspace limits of the robot
         self.workspace_limits = {
-            'x' : (-0.7, 0.7),
-            'y' : (-0.7, 0.7),
-            'z' : (0.8, 1.2)
+            'x': (-0.7, 0.7),
+            'y': (-0.7, 0.7),
+            'z': (0.8, 1.2)
         }
 
-        #self.print_model_info()
+        self.obstacle_sphere_positions = np.zeros((4, 3))  # Positions of the 4 obstacle spheres
 
-    #print model info
     def print_model_info(self):
         print("qpos shape:", self.data.qpos.shape)
         print("qvel shape:", self.data.qvel.shape)
@@ -92,35 +97,52 @@ class KinovaObsEnv(MujocoEnv, utils.EzPickle):
         print("Body ID to name mapping:", id2name2)
 
 
-    #get observations
     def _get_obs(self):
-        
+        current_joint_positions = self.data.qpos.flat[:7]
+        current_joint_velocities = self.data.qvel.flat[:7]
+        goal_position_diff = current_joint_positions - self.goal_angles
+
+        end_effector_position, goal_position_fk = self._compute_end_effector_pos(current_joint_positions, self.goal_angles)
+    
+        dist_to_goal = np.linalg.norm(end_effector_position - goal_position_fk)
+
         return np.concatenate([
-            self.data.qpos.flat[:7],
-            self.data.qvel.flat[:7],
-            self.data.qpos.flat[:7] - self.goal_angles
-            ])
+            current_joint_positions,  
+            current_joint_velocities,  
+            goal_position_diff,
+            self.obstacle_sphere_positions.flatten(),
+            self.min_distance_to_obstacle_spheres,   
+            self.collision_flags,  
+            np.array([self.obstacle_collision], dtype=np.float64),
+            np.array([self.table_collision], dtype=np.float64),
+            self.delta_link_distances.flatten(),
+            np.array([dist_to_goal]),
+    ])
 
 
-    #set positions of sphere randomly
-    def _set_sphere_position(self):
-        # Ensure the correct type for the entity is used
-        body_name = "sphere"
-    
-        # Get the body ID by name
-        body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, body_name)
-    
-        if body_id == -1:
-            raise ValueError(f"Body named '{body_name}' not found in the model.")
+    def _set_sphere_positions(self):
+        #minimum distance of obstacles from base of robot since base can't move
+        min_distance_from_base = 0.2
 
-        # Generate a new position within workspace limits
-        x = np.random.uniform(self.workspace_limits['x'][0], self.workspace_limits['x'][1])
-        y = np.random.uniform(self.workspace_limits['y'][0], self.workspace_limits['y'][1])
-        z = np.random.uniform(self.workspace_limits['z'][0], self.workspace_limits['z'][1])
-        new_position = np.array([x, y, z])
+        # Set positions of the 4 obstacle spheres randomly within the workspace limits
+        for i in range(4):
+            while True:
+                x = np.random.uniform(self.workspace_limits['x'][0], self.workspace_limits['x'][1])
+                y = np.random.uniform(self.workspace_limits['y'][0], self.workspace_limits['y'][1])
+                z = np.random.uniform(self.workspace_limits['z'][0], self.workspace_limits['z'][1])
+                obstacle_position = np.array([x, y, z])
 
-        # Set the new position for the body
-        self.model.body_pos[body_id] = new_position
+                base_position = np.array([0, 0, 0.6])
+
+                distance_to_base = np.linalg.norm(obstacle_position - base_position) #check distance of obstacle from base
+
+                if distance_to_base > min_distance_from_base:
+                    self.obstacle_sphere_positions[i] = obstacle_position
+                    # Set the new position for the body (obstacle)
+                    sphere_name = f"sphere{i + 1}"  # Unique names for each obstacle
+                    body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, sphere_name)
+                    self.model.body_pos[body_id] = self.obstacle_sphere_positions[i]
+                    break
 
 
     def _set_goal_pose(self):
@@ -138,15 +160,9 @@ class KinovaObsEnv(MujocoEnv, utils.EzPickle):
                 angles.append(random_angle)
 
             self.goal_angles = np.array(angles)
-            T = self.fk.forward_kinematics(self.goal_angles)
-            T_table_offset = np.array([
-                [1, 0, 0, 0.0],
-                [0, 1, 0, 0.0],
-                [0, 0, 1, 0.6],
-                [0, 0, 0, 1]
-            ])
-            T = T_table_offset @ T
-            x_goal, y_goal, z_goal = T[0, 3], T[1, 3], T[2, 3]
+            T = c_func.casadi_f0(np.array(self.goal_angles).reshape(1, -1))
+            x_goal, y_goal, z_goal = T[0][21], T[0][22], T[0][23]
+            z_goal = z_goal + 0.5   #to account for table's height as it wasn't in c_func
 
             if (self.workspace_limits['x'][0] <= x_goal <= self.workspace_limits['x'][1] and
                 self.workspace_limits['y'][0] <= y_goal <= self.workspace_limits['y'][1] and
@@ -157,7 +173,6 @@ class KinovaObsEnv(MujocoEnv, utils.EzPickle):
                 return self.goal_angles, goal_position
 
 
-    #set random goal position for cartesian space
     def _label_goal_pose(self, position):
         # Target marker
         goal_marker_name = "target"
@@ -169,42 +184,159 @@ class KinovaObsEnv(MujocoEnv, utils.EzPickle):
         self.model.body_pos[goal_marker_id] = position
 
 
-    def step(self, action):
-        self.do_simulation(action, self.frame_skip)
+    def _calculate_joint_positions(self, current_joint_positions):
+        joint_positions = np.zeros((8, 3))
+
+        current_joint_positions = np.array(current_joint_positions)
+        sphere_positions = c_func.casadi_f0(np.array(current_joint_positions).reshape(1, -1))
+
+        sphere_positions = sphere_positions[0]
+
+        count = 0
+
+        for i in range(len(joint_positions)):
+            for j in range(joint_positions.shape[1]):
+                joint_positions[i, j] = sphere_positions[count]
+                count += 1
+
+        joint_positions[:, -1] += 0.5   # to account for height of table as it wasn't in c_func
+    
+        return joint_positions
+
+
+    def _update_collision_info(self, joint_positions):
+        ########################################################################
+        # for x in range(len(joint_positions)):
+        #     self.link_sphere_positions[x] = joint_positions[x]
+
+        #     # Set the new position for the body (obstacle)
+        #     sphere_name = f"link_sphere{x + 1}"
+        #     body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, sphere_name)
+        #     self.model.body_pos[body_id] = self.link_sphere_positions[x]
+        ###########################################################################
+
+        # Compute current link distances
+        for i in range(4):  # For each obstacle
+            for j in range(8):  # For each link
+                self.current_link_distances[i, j] = np.linalg.norm(joint_positions[j] - self.obstacle_sphere_positions[i])
+
+        # Compute delta distances before updating previous distances
+        self.delta_link_distances = self.current_link_distances - self.previous_link_distances
+
+        # Update previous distances
+        self.previous_link_distances = np.copy(self.current_link_distances)
+
+        # Collision detection
+        for i in range(4):
+            self.min_distance_to_obstacle_spheres[i] = np.min(self.current_link_distances[i])
+            self.collision_flags[i] = self.min_distance_to_obstacle_spheres[i] < 0.05
+
+        self.obstacle_collision = np.any(self.collision_flags)
+        if self.obstacle_collision:
+            print("Collision with obstacle++++++")
+
+        #for table collision
+        table_height = 0.5
+        table_min_distance = 0.05
+
+        for i in range(8):
+            link_pos = joint_positions[i]
+            distance_to_table = link_pos[2] - table_height   # only z coordinate is relevant
+
+            if distance_to_table < table_min_distance:
+                self.table_collision = True
+                break
+            #     print("Collision with table---------")
+            #     break
+            # else:
+            #     print("no collision with table")
+
+        return
+
+    #calculate end_effector position at any given instant
+    def _compute_end_effector_pos(self, current_joint_positions, goal_angles):
+
+        A1 = c_func.casadi_f0(np.array(current_joint_positions).reshape(1, -1))
+        current_end_effector_position = np.array([A1[0][21], A1[0][22], A1[0][23] + 0.5])
+
+        A2 = c_func.casadi_f0(np.array(goal_angles).reshape(1, -1))
+        goal_position_end_eff = np.array([A2[0][21], A2[0][22], A2[0][23] + 0.5])
+
+        return current_end_effector_position, goal_position_end_eff
+    
+
+    def _compute_reward(self, goal_reached, current_joint_positions, action):
+        if self.obstacle_collision:
+            return -500
+
+        if self.table_collision:
+            return -400
         
-        self.step_number += 1
-
-        observation = self._get_obs()
-
-        # Check if observation contains only finite values
-        is_finite = np.isfinite(observation).all()
-        current_joint_positions = observation[:7]
-
-        # Check if current joint positions are close to the goal
-        goal_reached = np.allclose(current_joint_positions, self.goal_angles, atol=1e-2) 
-
         if goal_reached:
             self.goal_reached_count += 1
-            reward = 10
-        else:       
-            vec_1 = current_joint_positions - self.goal_angles
-            reward_dist = -np.linalg.norm(vec_1)
-            reward_ctrl = -np.square(action).sum()
-            reward = 0.5 * reward_dist + 0.1 * reward_ctrl
+            print("goal reached")
+            return 200
 
-        done = not is_finite or goal_reached
+        vec_1 = current_joint_positions - self.goal_angles
+        reward_dist = -np.linalg.norm(vec_1)
+
+        current_end_effector_position, goal_position_fk  = self._compute_end_effector_pos(current_joint_positions, self.goal_angles)
+
+        distance_to_goal = np.linalg.norm(current_end_effector_position - goal_position_fk)
+
+        reward_goal = -distance_to_goal
+
+        reward_ctrl = -np.square(action).sum()
+        reward = reward_dist + reward_goal + 0.1 * reward_ctrl
+
+        # #near collision penalties
+        # for i in range(4):  # For each obstacle
+        #     if self.min_distance_to_obstacle_spheres[i] < 0.1:  # Near-collision threshold
+        #         reward -= (1.0 - self.min_distance_to_obstacle_spheres[i]) * 100
+
+        for i in range(4):  # For each obstacle
+            for j in range(8):  # For each link
+                if self.delta_link_distances[i, j] < 0:  # Improvement threshold
+                    reward += 15 * self.delta_link_distances[i, j]
+
+        return reward
+
+    def step(self, action):
+        self.do_simulation(action, self.frame_skip)
+        self.step_number += 1
+
+        # Update collision info before constructing the observation
+        joint_positions = self._calculate_joint_positions(self.data.qpos.flat[:7])
+        self._update_collision_info(joint_positions)
+
+        # Get observation
+        observation = self._get_obs()
+
+        # Compute reward
+        current_joint_positions = observation[:7]
+        current_end_effector, goal_end_effector = self._compute_end_effector_pos(current_joint_positions, self.goal_angles)
+        goal_reached = np.allclose(current_joint_positions, self.goal_angles, atol=1e-2) or np.allclose(current_end_effector, goal_end_effector, atol=1e-2)
+        reward = self._compute_reward(goal_reached, current_joint_positions, action)
+
+        # Check termination conditions
+        done = not np.isfinite(observation).all() or goal_reached or self.obstacle_collision or self.table_collision
         truncated = self.step_number > self.episode_len
-
 
         if self.render_mode == "human":
             self.render()
+
         return observation, reward, done, truncated, {}
 
-    
 
-    #reset, restart simulation
     def reset_model(self):
         self.step_number = 0
+        self._set_sphere_positions()
+        self._set_goal_pose()
+        self.obstacle_collision = False
+        self.table_collision = False
+        self.previous_link_distances = np.zeros((4, 8))
+        self.delta_link_distances = np.zeros((4, 8))
+        self.collision_flags = np.zeros(4, dtype=bool)
 
         noise_low = -self._reset_noise_scale
         noise_high = self._reset_noise_scale       
@@ -216,17 +348,17 @@ class KinovaObsEnv(MujocoEnv, utils.EzPickle):
         qvel = self.init_qvel + self.np_random.uniform(
             low=noise_low, high=noise_high, size=self.model.nv
         )
-  
-        self.set_state(qpos, qvel)
-        self._set_goal_pose()
-        
-        self._set_sphere_position()
 
+        self.set_state(qpos, qvel)
+
+        joint_positions = self._calculate_joint_positions(self.data.qpos.flat[:7])
+        self._update_collision_info(joint_positions)
+        
         observation = self._get_obs()
         return observation
 
 
-#save model at intervals
+# SaveModelCallback class remains the same
 class SaveModelCallback(BaseCallback):
     def __init__(self, check_freq, save_path, verbose=0):
         super(SaveModelCallback, self).__init__(verbose)

@@ -227,7 +227,7 @@
   </worldbody>
   
   
-    <contact>
+  <contact>
     <exclude body1="base" body2="left_driver"/>
     <exclude body1="base" body2="right_driver"/>
     <exclude body1="base" body2="left_spring_link"/>
