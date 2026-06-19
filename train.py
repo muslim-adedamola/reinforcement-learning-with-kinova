@@ -1,60 +1,96 @@
+"""Unified training entry point for the three Kinova RL environments.
+
+Usage:
+    python train.py --env reaching
+    python train.py --env multi_static
+    python train.py --env dynamic
+
+Each env keeps its own settings (vec-env type, VecNormalize on/off, callbacks,
+timesteps) through configs.py, and writes checkpoints to its own models/ folder.
+"""
+
 import os
 import time
-from kinova_obs_env import KinovaObsEnv, SaveModelCallback
+import argparse
+
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
-from stable_baselines3.common.vec_env import VecNormalize 
+from stable_baselines3.common.vec_env import VecNormalize, SubprocVecEnv
 
-n_envs = 100
-n_episodes = 200
-episode_len = 2500 
-render_mode = "rgb_array"
-save_freq = 10000000
-save_path = "./models"  
-model_save_name = "kinova_obs_trainPPO200MObstacle"
-
-def make_env():
-    return KinovaObsEnv(episode_len=episode_len, render_mode=render_mode)
-
-env = make_vec_env(make_env, n_envs)
-env = VecNormalize(env, norm_obs=True, norm_reward=True)
-
-# Create a callback for saving the model
-save_callback = SaveModelCallback(check_freq=save_freq, save_path=save_path, verbose=1)
-
-# Check if a saved model exists
-if os.path.exists(f"{save_path}/{model_save_name}.zip"):
-    print("Loading existing model...")
-    model = PPO.load(f"{save_path}/{model_save_name}", env=env)
-
-    start_time = time.time()
-    
-    additional_timesteps = 100000  # Adjust as needed
-    model.learn(total_timesteps=additional_timesteps, log_interval=4, callback=save_callback, progress_bar=True)
-
-else:
-    model = PPO("MlpPolicy", env, verbose=1, tensorboard_log="./ppo_kinova_obs_env_tensorboard/")
-
-    start_time = time.time()
-
-    total_timesteps = n_episodes * episode_len * n_envs
-    model.learn(total_timesteps=total_timesteps, log_interval=4, callback=save_callback, progress_bar=True)
-
-# After loading or training, continue with post-training tasks
-goal_reaches = env.get_attr('goal_reached_count')
-print(f"Total goals reached during training: {sum(goal_reaches)}")
-
-end_time = time.time()
-training_duration_seconds = end_time - start_time
-training_duration_hours = training_duration_seconds / 3600 
-print(f"Training took {training_duration_hours:.2f} hours.")
-
-# Save the final model
-model.save(f"{save_path}/{model_save_name}")
-
-# Save the vector normalization statistics
-if isinstance(env, VecNormalize):
-    env.save("vec_normalize_stats.pkl")
+from configs import get_config, load_env_class
+from common.callbacks import (
+    SaveModelCallback,
+    TimeBasedCurriculumCallback,
+    CurriculumBatchCallback,
+)
 
 
+def build_env(config):
+    env_cls = load_env_class(config)
+    env_kwargs = dict(config["env_kwargs"])
+    # Subproc workers should not open a window; rgb_array is safe for the rest.
+    render_mode = None if config["vec_env"] == "subproc" else "rgb_array"
 
+    def make_env():
+        return env_cls(render_mode=render_mode, **env_kwargs)
+
+    vec_env_cls = SubprocVecEnv if config["vec_env"] == "subproc" else None
+    env = make_vec_env(make_env, n_envs=config["n_envs"], vec_env_cls=vec_env_cls)
+
+    if config["use_vecnormalize"]:
+        env = VecNormalize(env, norm_obs=True, norm_reward=True)
+    return env
+
+
+def build_callbacks(config, save_path):
+    callbacks = [SaveModelCallback(
+        check_freq=max(config["total_timesteps"] // 10, 1),
+        save_path=save_path,
+        verbose=1,
+    )]
+    if config["curriculum"] is not None:
+        callbacks.append(TimeBasedCurriculumCallback(
+            switch_timesteps=config["curriculum"]["switch_timesteps"], verbose=1
+        ))
+    if config["csv_log"]:
+        callbacks.append(CurriculumBatchCallback(
+            csv_path=os.path.join(config["dir"], "logs", "episode_batches.csv"),
+            verbose=1,
+        ))
+    return callbacks
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--env", required=True,
+                        choices=["reaching", "multi_static", "dynamic"])
+    args = parser.parse_args()
+
+    config = get_config(args.env)
+    save_path = os.path.join(config["dir"], "models")
+    os.makedirs(save_path, exist_ok=True)
+
+    env = build_env(config)
+    callbacks = build_callbacks(config, save_path)
+
+    tb_log = os.path.join(config["dir"], "tensorboard")
+    model = PPO("MlpPolicy", env, verbose=1, tensorboard_log=tb_log)
+
+    t0 = time.time()
+    model.learn(
+        total_timesteps=config["total_timesteps"],
+        log_interval=4,
+        callback=callbacks,
+        progress_bar=True,
+    )
+    print(f"Training took {(time.time() - t0) / 3600:.2f} hours.")
+
+    model.save(os.path.join(save_path, config["model_name"]))
+
+    # Save normalization stats so eval can reproduce the training input distribution.
+    if config["use_vecnormalize"]:
+        env.save(os.path.join(save_path, "vec_normalize_stats.pkl"))
+
+
+if __name__ == "__main__":
+    main()

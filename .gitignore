@@ -1,0 +1,23 @@
+# Intermediate checkpoints saved during training (keep the final named
+# policies like reaching_ppo.zip, multi_static_ppo.zip, dynamic_ppo.zip).
+*/models/model_*.zip
+
+# Training logs
+*/logs/
+*/tensorboard/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

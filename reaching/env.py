@@ -8,7 +8,7 @@ import os
 import mujoco
 
 
-class KinovaObsEnv(MujocoEnv, utils.EzPickle):
+class ReachingEnv(MujocoEnv, utils.EzPickle):
 
     metadata = {
         "render_modes" : [
@@ -28,7 +28,7 @@ class KinovaObsEnv(MujocoEnv, utils.EzPickle):
 
         MujocoEnv.__init__(
             self,
-            os.path.abspath("kinova_model/scene.xml"),
+            os.path.abspath("kinova_model_reaching/scene.xml"),
             5,
             observation_space=observation_space,
             **kwargs
